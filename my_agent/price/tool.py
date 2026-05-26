@@ -10,8 +10,7 @@ from cachetools import TTLCache, cached
 from ..orchestration.contracts import model_to_dict, normalize_tool_result
 
 price_cache = TTLCache(maxsize=100, ttl=300)
-
-FMP_BASE = "https://financialmodelingprep.com/api/v3"
+AV_BASE = "https://www.alphavantage.co/query"
 
 Interval = Literal["1d"]
 Period = Literal["1mo", "3mo"]
@@ -38,25 +37,41 @@ def get_price(symbol: str, period: Period = "1mo", interval: Interval = "1d") ->
     if not clean_symbol or clean_symbol == "UNKNOWN":
         return model_to_dict(normalize_tool_result({"status": "error", "error_message": "Missing stock symbol."}))
 
-    api_key = os.getenv("FMP_API_KEY")
+    api_key = os.getenv("ALPHAVANTAGE_API_KEY")
     if not api_key:
-        return model_to_dict(normalize_tool_result({"status": "error", "error_message": "FMP_API_KEY not set."}))
+        return model_to_dict(normalize_tool_result({"status": "error", "error_message": "ALPHAVANTAGE_API_KEY not set."}))
 
     try:
-        quote_resp = requests.get(f"{FMP_BASE}/quote/{clean_symbol}", params={"apikey": api_key}, timeout=10)
+        # Lấy giá hiện tại
+        quote_resp = requests.get(AV_BASE, params={
+            "function": "GLOBAL_QUOTE",
+            "symbol": clean_symbol,
+            "apikey": api_key
+        }, timeout=10)
         quote_resp.raise_for_status()
-        quote_data = quote_resp.json()
-        if not quote_data:
-            return model_to_dict(normalize_tool_result({"status": "error", "error_message": f"No data for {clean_symbol}."}))
-        quote = quote_data[0]
+        quote = quote_resp.json().get("Global Quote", {})
+        if not quote:
+            return model_to_dict(normalize_tool_result({"status": "error", "error_message": f"No quote data for {clean_symbol}."}))
 
-        hist_resp = requests.get(f"{FMP_BASE}/historical-price-full/{clean_symbol}", params={"timeseries": 60, "apikey": api_key}, timeout=10)
+        price = float(quote.get("05. price", 0))
+        prev = float(quote.get("08. previous close", price))
+        change = float(quote.get("09. change", 0))
+        change_pct = float(quote.get("10. change percent", "0%").replace("%", ""))
+
+        # Lấy lịch sử để tính EMA/RSI
+        hist_resp = requests.get(AV_BASE, params={
+            "function": "TIME_SERIES_DAILY",
+            "symbol": clean_symbol,
+            "outputsize": "compact",
+            "apikey": api_key
+        }, timeout=10)
         hist_resp.raise_for_status()
-        hist_data = hist_resp.json().get("historical", [])
+        hist_data = hist_resp.json().get("Time Series (Daily)", {})
         if not hist_data:
             return model_to_dict(normalize_tool_result({"status": "error", "error_message": f"No historical data for {clean_symbol}."}))
 
-        close = pd.Series([h["close"] for h in reversed(hist_data)], dtype=float)
+        closes = [float(v["4. close"]) for v in list(hist_data.values())[:60]]
+        close = pd.Series(list(reversed(closes)), dtype=float)
         ema20 = float(ema(close, 20).iloc[-1])
         ema50 = float(ema(close, 50).iloc[-1])
         rsi14 = float(rsi(close, 14).iloc[-1])
@@ -67,12 +82,6 @@ def get_price(symbol: str, period: Period = "1mo", interval: Interval = "1d") ->
         elif rsi14 < 30:
             trend += " | Oversold RSI<30"
 
-        price = float(quote.get("price", 0))
-        prev = float(quote.get("previousClose", price))
-        change = float(quote.get("change", 0))
-        change_pct = float(quote.get("changesPercentage", 0))
-        currency = quote.get("currency", "USD")
-
         return model_to_dict(normalize_tool_result({
             "status": "success",
             "data": {
@@ -80,10 +89,10 @@ def get_price(symbol: str, period: Period = "1mo", interval: Interval = "1d") ->
                 "snapshot": {
                     "symbol": clean_symbol,
                     "price": price,
-                    "currency": currency,
+                    "currency": "USD",
                     "change": change,
                     "change_percent": change_pct,
-                    "timestamp": quote.get("timestamp", ""),
+                    "timestamp": quote.get("07. latest trading day", ""),
                 },
                 "technicals": {
                     "ema20": ema20,
@@ -91,11 +100,11 @@ def get_price(symbol: str, period: Period = "1mo", interval: Interval = "1d") ->
                     "rsi14": rsi14,
                     "trend_hint": trend,
                 },
-                "meta": {"period": period, "interval": interval, "rows": len(hist_data)},
+                "meta": {"period": period, "interval": interval, "rows": len(closes)},
             },
         }))
 
     except requests.exceptions.Timeout:
-        return model_to_dict(normalize_tool_result({"status": "error", "error_message": "Timeout fetching FMP data."}))
+        return model_to_dict(normalize_tool_result({"status": "error", "error_message": "Timeout fetching Alpha Vantage data."}))
     except Exception as exc:
-        return model_to_dict(normalize_tool_result({"status": "error", "error_message": f"FMP error: {exc}"}))
+        return model_to_dict(normalize_tool_result({"status": "error", "error_message": f"Alpha Vantage error: {exc}"}))
