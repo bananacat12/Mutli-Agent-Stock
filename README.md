@@ -1,11 +1,20 @@
 # Stock Advisor Multi-Agent
 
+Live Demo: https://bananacat12.github.io/Mutli-Agent-Stock
+
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
 Production-lite multi-agent stock advisor built with Google ADK-style agent definitions, deterministic orchestration, A2A HTTP endpoints, and MCP tools. The system coordinates price, financial news, and Reddit sentiment specialists, then stores task and trace data in PostgreSQL.
 
 Demo URL: https://mutli-agent-stock.onrender.com
+
+## Web Interface
+
+1. Open the live demo: https://bananacat12.github.io/Mutli-Agent-Stock
+2. Enter a stock ticker, for example `TSLA` or `AAPL`.
+3. Enter your API key.
+4. Click `Analyze` and wait for the multi-agent result.
 
 ## Architecture
 
