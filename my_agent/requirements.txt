@@ -1,0 +1,16 @@
+google-adk
+mcp
+fastapi
+uvicorn
+sse-starlette
+pydantic
+sqlalchemy
+python-dotenv
+requests
+cachetools
+tenacity
+pandas
+numpy
+yfinance
+pytest
+pytest-asyncio
