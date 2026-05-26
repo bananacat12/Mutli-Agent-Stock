@@ -1,4 +1,4 @@
-# Stock Advisor Multi-Agent
+# Hệ thống Tư vấn Chứng khoán - Điều phối Định sẵn (Deterministic Orchestration) & Tổng hợp LLM (LLM Synthesis)
 
 Live Demo: https://bananacat12.github.io/Mutli-Agent-Stock
 
@@ -8,7 +8,7 @@ Live Demo: https://bananacat12.github.io/Mutli-Agent-Stock
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
-Production-lite multi-agent stock advisor built with Google ADK-style agent definitions, deterministic orchestration, A2A HTTP endpoints, and MCP tools. The system coordinates price, financial news, and Reddit sentiment specialists, then stores task and trace data in PostgreSQL.
+Hệ thống tư vấn chứng khoán dựa trên kiến trúc **Điều phối Định sẵn (Deterministic Orchestration)** và **Tổng hợp bằng LLM (LLM Synthesis)**. Thay vì sử dụng mô hình Multi-Agent tự do thuần túy (vốn dễ gặp lỗi và tốn chi phí), hệ thống áp dụng mô hình thiết kế tối ưu "Sweet Spot" kết hợp sự chính xác tuyệt đối của code định sẵn với khả năng lập luận của LLM.
 
 Demo URL: https://mutli-agent-stock.onrender.com
 
@@ -40,6 +40,24 @@ Planner -> AgentRequest contracts -> Parallel Executor
                       Task + Trace Store
                          PostgreSQL
 ```
+
+### Chi tiết Kiến trúc Hệ thống
+
+Hệ thống được thiết kế theo các nguyên tắc kiến trúc hiện đại nhằm đảm bảo độ tin cậy và hiệu năng cao nhất:
+
+1. **Mô hình "Sweet Spot" (Tools-as-Agents với Centralized Orchestrator)**:
+   - Thay vì xây dựng các Agent tự do giao tiếp và tự đưa ra quyết định luồng (dễ dẫn đến lặp vô hạn hoặc sai lệch luồng), hệ thống sử dụng một **Centralized Orchestrator** (Bộ điều phối trung tâm) để quản lý luồng chạy xác định (Deterministic Workflow).
+   - Các Agent đóng vai trò là các "Tool-based Agents" được kích hoạt và kiểm soát rõ ràng bởi Orchestrator.
+
+2. **Vai trò của các Sub-agents (Price, News, Sentiment) - Tool Wrappers bằng Code thuần**:
+   - Các Sub-agents thực chất là các hàm bọc code thuần (Tool Wrappers) thực hiện các tác vụ chuyên biệt (truy vấn giá Alpha Vantage/yfinance, thu thập tin tức từ NewsAPI, phân tích Sentiment từ Reddit).
+   - Chúng được thực thi hoàn toàn **song song** thông qua cơ chế bất đồng bộ `asyncio.gather()` của Python để tối ưu hóa hiệu năng.
+   - Việc sử dụng code thuần (thay vì LLM Agent tự tương tác với tool) giúp dữ liệu tài chính đầu ra chính xác 100% (tránh hoàn toàn hiện tượng **hallucination** - ảo giác của LLM), đồng thời giảm thiểu tối đa chi phí API và độ trễ (latency).
+
+3. **Tầng Tổng hợp (Synthesis Layer - LLM Synthesis)**:
+   - Chỉ có **duy nhất 1 cuộc gọi LLM** (sử dụng mô hình `gemini-2.5-flash` làm mặc định) ở bước cuối cùng của quy trình.
+   - LLM đóng vai trò như một **Portfolio Manager (Giám đốc Danh mục Đầu tư)**. Nhiệm vụ duy nhất của nó là nhận dữ liệu cấu trúc (JSON) đã được tổng hợp chính xác từ các sub-agent, phân tích tổng hợp thông tin và đưa ra khuyến nghị đầu tư cuối cùng (**BUY/HOLD/SELL**) kèm theo luận điểm phân tích chi tiết. Điều này giúp kiểm soát tốt chi phí và nâng cao chất lượng lập luận.
+
 
 ## Tech Stack
 
