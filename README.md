@@ -145,4 +145,3 @@ From the `my_agent` package directory:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Current expected result: `25 passed`.
