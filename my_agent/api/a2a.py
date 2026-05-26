@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import requests
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -21,6 +22,14 @@ app = FastAPI(
     title="Stock Advisor A2A Server",
     version="0.1.0",
     description="A2A-compatible HTTP facade for the production-lite stock advisor multi-agent workflow.",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://bananacat12.github.io", "http://localhost"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
