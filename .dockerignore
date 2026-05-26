@@ -1,0 +1,14 @@
+.env
+.git
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+my_agent/.env
+my_agent/.venv/
+my_agent/.pytest_cache/
+my_agent/tests/
+my_agent/**/__pycache__/
+my_agent/**/*.pyc
+my_agent.zip
