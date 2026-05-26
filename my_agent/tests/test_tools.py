@@ -49,25 +49,34 @@ def test_news_tool_success_shape(monkeypatch):
 
 
 def test_price_tool_success_shape(monkeypatch):
+    from datetime import timedelta
     price_tool.price_cache.clear()
+    monkeypatch.setenv("ALPHAVANTAGE_API_KEY", "test")
 
-    class FakeTicker:
-        fast_info = {"currency": "USD"}
+    def mock_get(url, params=None, **kwargs):
+        params = params or {}
+        func = params.get("function")
+        if func == "GLOBAL_QUOTE":
+            return FakeResponse({
+                "Global Quote": {
+                    "05. price": "180.0",
+                    "08. previous close": "175.0",
+                    "09. change": "5.0",
+                    "10. change percent": "2.86%",
+                    "07. latest trading day": "2026-05-26"
+                }
+            })
+        elif func == "TIME_SERIES_DAILY":
+            time_series = {}
+            for i in range(65):
+                date_str = (datetime(2026, 5, 26) - timedelta(days=i)).strftime("%Y-%m-%d")
+                time_series[date_str] = {"4. close": str(180.0 - i * 0.1)}
+            return FakeResponse({
+                "Time Series (Daily)": time_series
+            })
+        return FakeResponse({})
 
-        def history(self, **kwargs):
-            return pd.DataFrame(
-                {"Close": [100.0, 101.0, 102.0, 103.0]},
-                index=pd.to_datetime(
-                    [
-                        datetime(2026, 1, 1),
-                        datetime(2026, 1, 2),
-                        datetime(2026, 1, 3),
-                        datetime(2026, 1, 4),
-                    ]
-                ),
-            )
-
-    monkeypatch.setattr(price_tool.yf, "Ticker", lambda symbol: FakeTicker())
+    monkeypatch.setattr(price_tool.requests, "get", mock_get)
 
     result = price_tool.get_price("TSLA")
 
