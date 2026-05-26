@@ -2,6 +2,9 @@
 
 Live Demo: https://bananacat12.github.io/Mutli-Agent-Stock
 
+## Preview
+![Stock Analysis Desk](./assets/screenshot.jpeg)
+
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
