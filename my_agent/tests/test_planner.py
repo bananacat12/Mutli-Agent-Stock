@@ -27,3 +27,9 @@ def test_default_stock_question_uses_all_agents():
         "news_agent",
         "reddit_sentiment_agent",
     ]
+
+
+def test_missing_ticker_does_not_plan_unknown_tool_calls():
+    plan = build_plan("conv", "task", "trace", "nen mua co phieu nao")
+
+    assert plan == []

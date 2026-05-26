@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from .agent import handle_user_message_v2
-from .news.tool import get_news
-from .price.tool import get_price
-from .security.auth import is_auth_enabled, verify_api_key
-from .security.rate_limit import check_rate_limit
-from .sentiment.tool import reddit_social_sentiment
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from my_agent.agent import handle_user_message_v2
+from my_agent.news.tool import get_news
+from my_agent.price.tool import get_price
+from my_agent.security.auth import is_auth_enabled, verify_api_key
+from my_agent.security.rate_limit import check_rate_limit
+from my_agent.sentiment.tool import reddit_social_sentiment
 
 mcp = FastMCP(
     name="stock-advisor-multi-agent",

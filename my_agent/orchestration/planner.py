@@ -41,7 +41,26 @@ def extract_ticker(text: str) -> str | None:
     if cashtags:
         return cashtags[0]
     candidates = re.findall(r"\b[A-Z]{1,5}\b", upper)
-    ignored = {"BUY", "SELL", "HOLD", "RSI", "EMA", "TIN", "MOI", "NEWS"}
+    ignored = {
+        "BUY",
+        "SELL",
+        "HOLD",
+        "RSI",
+        "EMA",
+        "TIN",
+        "MOI",
+        "NEWS",
+        "NEN",
+        "MUA",
+        "BAN",
+        "CO",
+        "PHIEU",
+        "NAO",
+        "GIA",
+        "VA",
+        "Y",
+        "KIEN",
+    }
     for candidate in candidates:
         if candidate not in ignored:
             return candidate
@@ -71,7 +90,10 @@ def build_plan(
     facts: dict[str, str] | None = None,
 ) -> list[AgentRequest]:
     clean_text = sanitize_user_text(user_text)
-    ticker = extract_ticker(clean_text) or (facts or {}).get("ticker") or "UNKNOWN"
+    ticker = extract_ticker(clean_text) or (facts or {}).get("ticker")
+    if not ticker:
+        return []
+
     agents = _selected_agents(clean_text)
     requests: list[AgentRequest] = []
 
