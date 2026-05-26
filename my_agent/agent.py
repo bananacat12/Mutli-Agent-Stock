@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 from typing import Any
 
+from google import genai
 from google.adk.agents.llm_agent import Agent
 
 from .memory.store import build_context, create_task, save_message, update_task
@@ -107,7 +110,7 @@ def _status_from_results(results: list[AgentResponse]) -> str:
     return "failed"
 
 
-def _summarize_results(user_text: str, results: list[AgentResponse]) -> str:
+def _fallback_summarize_results(user_text: str, results: list[AgentResponse]) -> str:
     if not results:
         return "I could not create an agent plan. Please provide a stock ticker or company name."
 
@@ -124,6 +127,73 @@ def _summarize_results(user_text: str, results: list[AgentResponse]) -> str:
     else:
         lines.append("Recommendation: unable to evaluate because all subagents failed.")
     return "\n".join(lines)
+
+
+def _synthesis_api_key() -> str | None:
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+
+def _compact_result(result: AgentResponse) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "agent_name": result.agent_name,
+        "status": result.status,
+        "error": result.error,
+        "latency_ms": result.latency_ms,
+    }
+    if isinstance(result.data, dict):
+        payload["summary"] = result.data.get("text")
+        tool_result = result.data.get("tool_result")
+        if isinstance(tool_result, dict):
+            payload["tool_status"] = tool_result.get("status")
+            payload["tool_data"] = tool_result.get("data")
+            payload["tool_error"] = tool_result.get("error")
+        else:
+            payload["data"] = result.data
+    else:
+        payload["data"] = result.data
+    return payload
+
+
+def _build_synthesis_prompt(user_text: str, results: list[AgentResponse]) -> str:
+    evidence = json.dumps([_compact_result(result) for result in results], ensure_ascii=False, default=str)
+    if len(evidence) > 12000:
+        evidence = evidence[:12000] + "... [TRUNCATED]"
+    return (
+        "You are the root stock-advisor orchestrator in a multi-agent system. "
+        "Synthesize only the provided subagent evidence. Do not invent prices, news, sentiment, sources, or dates. "
+        "If evidence is missing or conflicting, say so clearly. This is not financial advice.\n\n"
+        "Return a concise answer with these sections:\n"
+        "1. Verdict: BUY, HOLD, SELL, or INSUFFICIENT DATA\n"
+        "2. Evidence: price, news, and sentiment bullets when available\n"
+        "3. Risks / missing data\n\n"
+        f"User request: {user_text}\n\n"
+        f"Subagent results JSON:\n{evidence}"
+    )
+
+
+def _call_synthesis_llm(user_text: str, results: list[AgentResponse]) -> str | None:
+    api_key = _synthesis_api_key()
+    if not api_key or not results:
+        return None
+
+    model = os.getenv("ROOT_SYNTHESIS_MODEL", "gemini-2.5-flash")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model,
+        contents=_build_synthesis_prompt(user_text, results),
+    )
+    text = getattr(response, "text", None)
+    return text.strip() if isinstance(text, str) and text.strip() else None
+
+
+async def _summarize_results(user_text: str, results: list[AgentResponse]) -> str:
+    if not results:
+        return _fallback_summarize_results(user_text, results)
+    try:
+        llm_reply = await asyncio.to_thread(_call_synthesis_llm, user_text, results)
+    except Exception:
+        llm_reply = None
+    return llm_reply or _fallback_summarize_results(user_text, results)
 
 
 async def handle_user_message_v2_async(
@@ -159,7 +229,7 @@ async def handle_user_message_v2_async(
         executor = AgentExecutor(_create_agent_map(), max_steps=3, max_retries=2)
         results = await executor.execute(requests)
         status = _status_from_results(results)
-        reply = _summarize_results(clean_text, results)
+        reply = await _summarize_results(clean_text, results)
         output = {
             "trace_id": task.trace_id,
             "task_id": task.task_id,
