@@ -46,7 +46,7 @@ Planner -> AgentRequest contracts -> Parallel Executor
 - MCP FastMCP
 - PostgreSQL + SQLAlchemy
 - Pydantic contracts
-- Yahoo Finance, NewsAPI, Reddit/Sentim
+- Alpha Vantage (fallback yfinance), NewsAPI, Reddit/Sentim
 - Pytest
 
 ## Local Development
@@ -63,6 +63,7 @@ Edit `.env` and set at least:
 AGENT_API_KEY=<liên hệ để lấy API key>
 NEWS_API_KEY=<liên hệ để lấy API key>
 GOOGLE_API_KEY=<liên hệ để lấy API key>
+ALPHAVANTAGE_API_KEY=<liên hệ để lấy API key>
 ```
 
 The Compose file treats `.env` as optional so configuration can be parsed before secrets are created, but real runs should set the values above.
@@ -119,6 +120,7 @@ DB_URL=<Render Postgres SQLAlchemy URL>
 AGENT_API_KEY=<liên hệ để lấy API key>
 NEWS_API_KEY=<liên hệ để lấy API key>
 GOOGLE_API_KEY=<liên hệ để lấy API key>
+ALPHAVANTAGE_API_KEY=<liên hệ để lấy API key>
 GOOGLE_GENAI_USE_VERTEXAI=0
 ROOT_SYNTHESIS_MODEL=gemini-2.5-flash
 A2A_ENABLE_PUSH=0
