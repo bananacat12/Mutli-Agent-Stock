@@ -51,8 +51,9 @@ Copy-Item .env.example .env
 Edit `.env` and set at least:
 
 ```env
-AGENT_API_KEY=your-secret-key-here
-NEWS_API_KEY=your-newsapi-key-here
+AGENT_API_KEY=<liên hệ để lấy API key>
+NEWS_API_KEY=<liên hệ để lấy API key>
+GOOGLE_API_KEY=<liên hệ để lấy API key>
 ```
 
 The Compose file treats `.env` as optional so configuration can be parsed before secrets are created, but real runs should set the values above.
@@ -74,7 +75,7 @@ Call A2A:
 ```powershell
 curl -X POST http://localhost:8000/tasks `
   -H "Content-Type: application/json" `
-  -H "X-API-Key: your-secret-key-here" `
+  -H "X-API-Key: <liên hệ để lấy API key>" `
   -d "{\"sessionId\":\"demo\",\"message\":{\"role\":\"user\",\"parts\":[{\"type\":\"text\",\"text\":\"Analyze TSLA\"}]}}"
 ```
 
@@ -106,9 +107,9 @@ MCP tools require the `api_key` argument when `AGENT_API_KEY` is set.
 
 ```env
 DB_URL=<Render Postgres SQLAlchemy URL>
-AGENT_API_KEY=<strong random secret>
-NEWS_API_KEY=<your NewsAPI key>
-GOOGLE_API_KEY=<your Gemini API key>
+AGENT_API_KEY=<liên hệ để lấy API key>
+NEWS_API_KEY=<liên hệ để lấy API key>
+GOOGLE_API_KEY=<liên hệ để lấy API key>
 GOOGLE_GENAI_USE_VERTEXAI=0
 ROOT_SYNTHESIS_MODEL=gemini-2.5-flash
 A2A_ENABLE_PUSH=0
