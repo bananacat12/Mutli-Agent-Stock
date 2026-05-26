@@ -14,3 +14,4 @@ numpy
 yfinance
 pytest
 pytest-asyncio
+psycopg2-binary
