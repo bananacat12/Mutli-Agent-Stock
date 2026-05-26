@@ -5,7 +5,7 @@
 
 Production-lite multi-agent stock advisor built with Google ADK-style agent definitions, deterministic orchestration, A2A HTTP endpoints, and MCP tools. The system coordinates price, financial news, and Reddit sentiment specialists, then stores task and trace data in PostgreSQL.
 
-Demo URL: https://your-app.railway.app
+Demo URL: https://mutli-agent-stock.onrender.com
 
 ## Architecture
 
@@ -96,27 +96,30 @@ python -m my_agent.mcp_server
 
 MCP tools require the `api_key` argument when `AGENT_API_KEY` is set.
 
-## Railway Deploy
+## Render Deploy
 
 1. Push this repository to GitHub.
-2. Go to Railway -> New Project -> Deploy from GitHub.
+2. Go to Render -> New -> Web Service -> Deploy from GitHub.
 3. Select the repository.
-4. Add a Railway PostgreSQL service.
+4. Add a Render PostgreSQL service.
 5. Set environment variables on the app service:
 
 ```env
-DB_URL=<Railway Postgres SQLAlchemy URL>
+DB_URL=<Render Postgres SQLAlchemy URL>
 AGENT_API_KEY=<strong random secret>
 NEWS_API_KEY=<your NewsAPI key>
+GOOGLE_API_KEY=<your Gemini API key>
+GOOGLE_GENAI_USE_VERTEXAI=0
+ROOT_SYNTHESIS_MODEL=gemini-2.5-flash
 A2A_ENABLE_PUSH=0
-A2A_PUBLIC_URL=https://your-app.railway.app
+A2A_PUBLIC_URL=https://mutli-agent-stock.onrender.com
 RATE_LIMIT_REQUESTS=60
 RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
-6. Deploy. Railway reads `railway.toml`, builds the Dockerfile, and checks `/health`.
+6. Deploy and check `/health`.
 
-If Railway gives a PostgreSQL URL in `postgresql://...` format, use SQLAlchemy's PostgreSQL driver format if needed:
+If Render gives a PostgreSQL URL in `postgresql://...` format, use SQLAlchemy's PostgreSQL driver format if needed:
 
 ```text
 postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DATABASE
@@ -130,4 +133,4 @@ From the `my_agent` package directory:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Current expected result: `22 passed`.
+Current expected result: `25 passed`.
